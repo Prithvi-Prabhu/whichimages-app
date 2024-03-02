@@ -1,7 +1,19 @@
-
-import React, { useState, useEffect } from 'react';
-import { Button, View, Text, Image, Platform, Alert, PermissionsAndroid, ScrollView } from 'react-native';
-import ImagePicker, { ImageOrVideo } from 'react-native-image-crop-picker';
+import React, {useState, useEffect} from 'react';
+import {
+  Button,
+  View,
+  Text,
+  Image,
+  Platform,
+  Alert,
+  PermissionsAndroid,
+  ScrollView,
+  StyleSheet,
+  Dimensions,
+  ActivityIndicator,
+  TouchableOpacity,
+} from 'react-native';
+import ImagePicker, {ImageOrVideo} from 'react-native-image-crop-picker';
 import axios from 'axios';
 import ModalSelector from 'react-native-modal-selector';
 import * as RNFS from 'react-native-fs';
@@ -10,11 +22,13 @@ const AddImage: React.FC = () => {
   const [selectedImages, setSelectedImages] = useState<ImageOrVideo[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [base64images, setBase64Images] = useState<string[]>([]);
+  const windowWidth = Dimensions.get('window').width;
+  const windowHeight = Dimensions.get('window').height;
 
-  const category: { key: string; label: string }[] = [
-    { key: 'cat1', label: 'cat1' },
-    { key: 'cat2', label: 'cat2' },
-    { key: 'cat3', label: 'cat3' },
+  const category: {key: string; label: string}[] = [
+    {key: 'cat1', label: 'cat1'},
+    {key: 'cat2', label: 'cat2'},
+    {key: 'cat3', label: 'cat3'},
   ];
 
   useEffect(() => {
@@ -33,7 +47,7 @@ const AddImage: React.FC = () => {
             buttonNeutral: 'Ask Me Later',
             buttonNegative: 'Cancel',
             buttonPositive: 'OK',
-          }
+          },
         );
 
         if (grantedCamera === PermissionsAndroid.RESULTS.GRANTED) {
@@ -56,10 +70,13 @@ const AddImage: React.FC = () => {
       setSelectedImages(images);
 
       const base64ImagesArray = await Promise.all(
-        images.map(async (image) => {
-          const filePath = Platform.OS === 'android' ? image.path.replace('file://', '') : image.path;
+        images.map(async image => {
+          const filePath =
+            Platform.OS === 'android'
+              ? image.path.replace('file://', '')
+              : image.path;
           return await RNFS.readFile(filePath, 'base64');
-        })
+        }),
       );
       setBase64Images(base64ImagesArray);
     } catch (error) {
@@ -67,11 +84,15 @@ const AddImage: React.FC = () => {
     }
   };
 
-  const selectCategory = (option: { key: string; label: string }) => {
+  const selectCategory = (option: {key: string; label: string}) => {
     setSelectedCategory(option.key);
   };
 
+  const [isLoading, setIsLoading] = useState(false);
+
   const uploadImages = async () => {
+    await setIsLoading(true);
+
     if (!selectedImages.length || !selectedCategory) {
       Alert.alert('Error', 'Please select at least one image and a category.');
       return;
@@ -80,18 +101,22 @@ const AddImage: React.FC = () => {
     try {
       const formData = new FormData();
       formData.append('category', selectedCategory);
-      
+
       // Append each base64 image to FormData
       base64images.forEach((base64Image, index) => {
         formData.append('image', base64Image);
       });
 
       // Send POST request with FormData
-      const response = await axios.post('https://which-api.cialabs.tech/uploadfiles/', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
+      const response = await axios.post(
+        'https://which-api.cialabs.tech/uploadfiles/',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
         },
-      });
+      );
 
       console.log('Images uploaded', response);
       Alert.alert('Success', 'Images uploaded successfully!');
@@ -99,34 +124,92 @@ const AddImage: React.FC = () => {
       console.error('Error uploading images:', error);
       Alert.alert('Error', 'Failed to upload images. Please try again.');
     }
+
+    await setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
   };
 
   return (
-      <ScrollView> 
-        <View>
-          <Text style={{ fontWeight: 'bold', fontSize: 32, color: 'black', textAlign: 'center', marginBottom: 50 }}>
-            Add Images
-          </Text>
-          <Button onPress={selectImages} title="Select Images" color="black" />
-  
+    <ScrollView>
+      <View style={[{width: windowWidth}]}>
+        <Text style={styles.heading}>Add Images</Text>
+        <Button onPress={selectImages} title="Select Images" color="black" />
+
+        <View style={styles.parent}>
           {selectedImages.map((image, index) => (
-            <Image key={index} source={{ uri: image.path }} style={{ width: 200, height: 200, marginVertical: 10 }} />
+            <View key={index}>
+              <Image
+                style={[styles.child, {width: windowWidth / 3.2}]}
+                source={{uri: image.path}}
+              />
+            </View>
           ))}
-  
-          <ModalSelector
-            data={category}
-            initValueTextStyle={{ fontWeight: 'bold', color: 'black' }}
-            initValue="Select Category"
-            accessible={true}
-            onChange={selectCategory}
-            selectStyle={{ borderWidth: 10 }}
-            cancelStyle={{ borderWidth: 10 }}
-          />
-  
-          <Button onPress={uploadImages} title="Upload Images" color="blue" />
         </View>
-      </ScrollView>
-    );
-  };
+
+        <ModalSelector
+          data={category}
+          initValueTextStyle={{fontWeight: 'bold', color: 'black'}}
+          initValue="Select Category"
+          accessible={true}
+          onChange={selectCategory}
+          selectStyle={{borderWidth: 10}}
+          cancelStyle={{borderWidth: 10}}
+        />
+
+<TouchableOpacity onPress={uploadImages}>
+          <Text style={styles.loadingContainer}>Upload Images</Text>
+          {isLoading && (
+            <View>
+              <ActivityIndicator size="large" color="#0000ff" />
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+   /* position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)', // Semi-transparent background */
+    backgroundColor: 'blue',
+    color: 'white',
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    margin: 10,
+    padding: 10,
+  },
+  parent: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignContent: 'flex-start',
+  },
+  child: {
+    aspectRatio: 1,
+    margin: 2,
+  },
+  heading: {
+    color: 'black',
+    fontWeight: 'bold',
+    width: '100%',
+    margin: 10,
+    marginLeft: 70,
+    fontSize: 50,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
 
 export default AddImage;

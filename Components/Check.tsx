@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Button, Alert, Image, Platform, PermissionsAndroid, ScrollView } from 'react-native';
 import ImagePicker, { ImageOrVideo } from 'react-native-image-crop-picker';
 import axios from 'axios';
-import { RadioButton } from 'react-native-paper'; // Import RadioButton from react-native-paper
+import { CheckBox } from 'react-native-elements';
 import { Picker } from '@react-native-picker/picker';
 import * as RNFS from 'react-native-fs';
-import DropDown from './DropDown/DropDown'; // Import the DropDown component
+import DropDown from './DropDown/DropDown.tsx'; // Import the DropDown component
+
 
 interface ImageData {
   name: string;
@@ -20,8 +21,9 @@ const StartTesting: React.FC = () => {
   const [selectedImages, setSelectedImages] = useState<ImageOrVideo[]>([]);
   const [base64images, setBase64Images] = useState<string[]>([]);
   const [isFeedbackSubmitted, setIsFeedbackSubmitted] = useState<boolean>(false);
-  const [question1Answer, setQuestion1Answer] = useState<string>(''); // State to store answer for Question 1
-  const [question2Answer, setQuestion2Answer] = useState<string>(''); // State to store answer for Question 2
+
+  // Dummy data for dropdown (can be replaced with websocket data)
+  const availableModels: string[] = ['Choose Model', 'Model 1', 'Model 2', 'Model 3'];
 
   // Function to handle image selection
   useEffect(() => {
@@ -87,7 +89,7 @@ const StartTesting: React.FC = () => {
       const response = await axios.post('https://example.com/api/test-model', {
         image: selectedImages,
         model: selectedModel,
-        feedback: [question1Answer === 'Yes', question2Answer === 'Yes'] // Include feedback in the request
+        feedback: feedback // Include feedback in the request
       });
 
       // Update state with API results
@@ -96,6 +98,13 @@ const StartTesting: React.FC = () => {
       console.error('Error submitting test:', error);
       Alert.alert('Error', 'Failed to submit test. Please try again.');
     }
+  };
+
+  // Function to handle checkbox change
+  const handleCheckboxChange = (index: number) => {
+    const updatedFeedback = [...feedback];
+    updatedFeedback[index] = !updatedFeedback[index];
+    setFeedback(updatedFeedback);
   };
 
   // Function to handle submitting feedback
@@ -113,8 +122,13 @@ const StartTesting: React.FC = () => {
 
   return (
     <ScrollView contentContainerStyle={{ padding: 20 }}>
-      {/* DropDown component */}
-      <DropDown />
+      {/* Dropdown for selecting model */}
+      <Text>Select Model to Test:</Text>
+      <Picker selectedValue={selectedModel} onValueChange={(itemValue) => setSelectedModel(itemValue)}>
+        {availableModels.map((model, index) => (
+          <Picker.Item key={index} label={model} value={model} />
+        ))}
+      </Picker>
 
       {/* Choose image button */}
       <Button title="Choose Image" onPress={selectImages} />
@@ -130,57 +144,33 @@ const StartTesting: React.FC = () => {
       {/* Table to display API results */}
       <View style={{ marginTop: 20 }}>
         <Text style={{ fontWeight: 'bold', marginBottom: 10 }}>API Results:</Text>
-        <ScrollView horizontal>
-          <View style={{ flexDirection: 'row', marginBottom: 10 }}>
-            <View style={{ flex: 1, marginRight: 5 }}>
-              <Text style={{ fontWeight: 'bold', marginBottom: 5 }}>Column One</Text>
-              {Object.entries(apiResults).map(([key, value], index) => (
-                <Text key={index} style={{ marginBottom: 5 }}>{key}</Text>
-              ))}
-            </View>
-            <View style={{ flex: 1, marginLeft: 5 }}>
-              <Text style={{ fontWeight: 'bold', marginBottom: 5 }}>Column Two</Text>
-              {Object.entries(apiResults).map(([key, value], index) => (
-                <Text key={index} style={{ marginBottom: 5 }}>{typeof value === 'object' ? JSON.stringify(value) : String(value)}</Text>
-              ))}
-            </View>
+        {Object.entries(apiResults).map(([key, value], index) => (
+          <View key={index} style={{ flexDirection: 'row', borderBottomWidth: 1, paddingBottom: 5 }}>
+            <Text style={{ flex: 1 }}>{key}</Text>
+            <Text style={{ flex: 1 }}>{typeof value === 'object' ? JSON.stringify(value) : String(value)}</Text>
           </View>
-        </ScrollView>
+        ))}
       </View>
 
       {/* Scrollable section for questionnaire */}
       <ScrollView style={{ marginTop: 20 }}>
         <Text style={{ fontWeight: 'bold' }}>Feedback:</Text>
-        <View>
-          <Text>Question 1: Did the test result meet your expectations?</Text>
-          <RadioButton.Group onValueChange={newValue => setQuestion1Answer(newValue)} value={question1Answer}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <RadioButton.Android value="Yes" />
-              <Text>Yes</Text>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <RadioButton.Android value="No" />
-              <Text>No</Text>
-            </View>
-          </RadioButton.Group>
-        </View>
-        <View style={{ marginTop: 10 }}>
-          <Text>Question 2: Would you recommend this model for further testing?</Text>
-          <RadioButton.Group onValueChange={newValue => setQuestion2Answer(newValue)} value={question2Answer}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <RadioButton.Android value="Yes" />
-              <Text>Yes</Text>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <RadioButton.Android value="No" />
-              <Text>No</Text>
-            </View>
-          </RadioButton.Group>
-        </View>
+        <CheckBox
+          checked={feedback[0]}
+          onPress={() => handleCheckboxChange(0)}
+          title="Question 1: Did the test result meet your expectations?"
+          containerStyle={{ marginTop: 10 }}
+        />
+        <CheckBox
+          checked={feedback[1]}
+          onPress={() => handleCheckboxChange(1)}
+          title="Question 2: Would you recommend this model for further testing?"
+          containerStyle={{ marginTop: 10 }}
+        />
         <Button
           title="Submit Feedback"
           onPress={submitFeedback}
-          disabled={!question1Answer || !question2Answer} // Disable button if any answer is not selected
+          disabled={!feedback.some((value) => value === true)} // Disable button if no checkbox is checked
           color="black"
         />
         {isFeedbackSubmitted && <Text style={{ color: 'green', marginTop: 10 }}>Feedback submitted successfully!</Text>}
@@ -190,3 +180,4 @@ const StartTesting: React.FC = () => {
 };
 
 export default StartTesting;
+
