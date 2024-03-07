@@ -5,7 +5,7 @@ import axios from 'axios';
 import { RadioButton } from 'react-native-paper'; // Import RadioButton from react-native-paper
 import { Picker } from '@react-native-picker/picker';
 import * as RNFS from 'react-native-fs';
-import DropDown from './DropDown/DropDown'; // Import the DropDown component
+import DropDown from '../../../../Components/DropDown/DropDown'; // Import the DropDown component
 
 interface ImageData {
   name: string;

@@ -2,11 +2,11 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import Menu from './Components/Menu';
-import AddImage from './Components/AddImage';
-import RetrieveImageScreen from './Components/RetrieveImageScreen';
-import StartTesting from './Components/StartTesting';
-import OpenPhoto from './Components/OpenPhoto';
+import Menu from './frontend/src/components/Menu/Menu';
+import AddImage from './frontend/src/components/AddImage/AddImage';
+import RetrieveImageScreen from './frontend/src/components/RetrieveImage/RetrieveImageScreen';
+import StartTesting from './frontend/src/components/StartTesting/StartTesting';
+import OpenPhoto from './frontend/src/components/RetrieveImage/OpenPhoto';
 
 const Stack = createStackNavigator();
 

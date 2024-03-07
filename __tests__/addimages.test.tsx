@@ -2,7 +2,7 @@
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import axios from 'axios';
-import AddImage from 'C://ImageProject/Components/AddImage';
+import AddImage from '../frontend/src/components/AddImage/AddImage';
 
 // Mock the necessary modules
 jest.mock('axios');
